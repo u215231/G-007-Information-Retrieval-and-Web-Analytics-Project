@@ -1,4 +1,6 @@
-# Information Retrieval and Web Analytics Project
+# Information Retrieval and Web Analytics: Project Set-up
+
+---
 
 ## Group members
 
@@ -8,35 +10,52 @@
 | Christopher Matienzo Chilo | u198726 | christopher.matienzo01\@estudiant.upf.edu |
 | Àlex Roger Moya | u199765 | alex.roger01\@estudiant.upf.edu |
 
-## Summary
+---
 
-Based on what you learned from theoretical classes, the seminars, the lab exercises, and your own research, you are asked to build a RAG (Retrieval Augmented Generation) system based on a custom search engine implementing different indexing and ranking algorithms.
+## Introduction to Installation Process
 
-You are asked to implement four incremental steps that must be delivered on predefined dates:
+This README contains the previous information to the user to execute properly all the codes. This project uses Python notebooks and also several libraries for data and text processing. 
 
-| Part   | Topic                                         | Delivery Date       |
-|:----------------|:-------------------------------------|:----------------|
-| Part 1 | Text Processing and Exploratory Data Analysis | Friday 24/10/2025   |
-| Part 2 | Indexing and Evaluation                       | Friday 31/10/2025   |
-| Part 3 | Ranking and Filtering                         | Thursday 20/11/2025 |
-| Part 4 | RAG, User Interface, and Web Analytics        | Saturday 29/11/2025 |
+---
 
-The requirements definitions for each part will be published in the Aula Global in the corresponding week. The programming language must be Python3. Create a GitHub repository to upload and share your code.
+## Python and IDE installation
 
-## Project deliverables
+First of all, check if you have in your computer installed Python, version 3. You can check with `python --version` on the command interpreter. If it is not installed, install it on the Python from https://www.python.org/downloads/ or from the local app store of your computer.
 
-You must deliver for each of the parts the following artifacts:
+To run the notebooks, you can use some Integrated Development Enviroment (IDE) such as Visual Studio Code (VSCode), which can be downloaded from https://code.visualstudio.com/ or from the local app store of the computer.
 
-1.  A PDF report, uploaded to Aula Global in a section that will be available for that purpose. Name the report file like IRWA-2025-uXXXXXX-uXXXXXX-uXXXXXX-part-N.pdf where uXXXXXX is each student's ID. The report must include: an explanation of the decisions you made for implementing the different algorithms, the assumptions made, and everything else you consider relevant to explain to the evaluators.
 
-2.  The repository TAG that names the part that you are delivering, i.e., IRWA-2025-part-N. The TAG creation date must be before the delivery deadline in order to be considered. You can find here a guide on how to work with Git. Section 2.6 addresses tagging.
+---
 
-The deadline time is at 23:00 on the requested date. Delivery late: -20% of the grade per day.
+## Installation of GitHub repository
 
-The delivered code must be properly documented (especially the defined functions) and equipped with a proper README file in the project’s root folder. The README should include step-by-step instructions about how to run the code and how to select the different functions, algorithms, and/or other options to run the ranking scores.
+Run the following commands in your console to set up the environment:
 
-Remember to mention the GitHub URL and TAG in the report for each part.
+```bash
+# 1. Clone the repository
+git clone https://github.com/u215231/Information-Retrieval-and-Web-Analytics-Project.git
 
-## Project Template 
+# 2. Navigate to the project directory
+cd Information-Retrieval-and-Web-Analytics-Project
+```
+---
 
-The project template can be found here: <https://github.com/trokhymovych/irwa-search-engine>
+
+## Project Part 1
+
+### Requirements
+
+```bash
+# 1. Navigate to project part 1
+cd IRWA-2025-part-1
+
+# 2. Install the required libraries
+pip install pandas nltk matplotlib seaborn wordcloud
+
+# 3. Download additional NLTK resources
+python -m nltk.downloader stopwords punkt
+```
+
+### Code Execution
+
+When all libraries are installed, we can execute `IRWA-2025-part-1-final-solution.ipynb` notebook with `Run All` option of VSCode. We will choose our installed Python kernel to run the notebook.
