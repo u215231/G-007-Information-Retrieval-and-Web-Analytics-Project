@@ -33,13 +33,12 @@ Run the following commands in your console to set up the environment:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/u215231/Information-Retrieval-and-Web-Analytics-Project.git
+git clone https://github.com/u215231/G-007-Information-Retrieval-and-Web-Analytics-Project.git
 
 # 2. Navigate to the project directory
 cd Information-Retrieval-and-Web-Analytics-Project
 ```
 ---
-
 
 ## Project Part 1
 
