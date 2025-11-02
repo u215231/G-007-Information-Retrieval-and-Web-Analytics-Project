@@ -1,0 +1,76 @@
+# Project Part 1 Report
+### <p style="color:gray; margin-top:-20px;">Information Retrieval And Web Analysis 2025</p>
+---
+
+Marc Bosch Manzano u215231
+Chris Matienzo Chilo u198726
+Àlex Roger Moya u199765
+
+<p style="text-align: justify;">
+
+## GitHub repository link
+
+
+## Introductory Section
+
+
+## Part 1: Indexing 
+ 
+1.  Build inverted index: After having pre-processed the data, you can then create the inverted index. 
+
+   
+ 
+2.  Propose test queries: Define five queries that will be used to evaluate your search 
+engine. 
+ 
+3.  Rank your results: Implement the TF-IDF algorithm and provide ranking-based results. 
+
+Let the following definitions of our inputs:
+- $V = {k_1, k_2, ..., k_t}$ is the vocabulary, the set of terms, where $t$ is the number of terms in the vocabulary.<br>
+- $d_1, d_2, ..., d_N$ is the documents of the collection, where $N$ is the number of documents in the collection.<br>
+- $i \in \{1, 2, ..., t\}$ the index for a term in the vocabulary.<br>
+- $j \in \{1, 2, ..., N\}$ the index for a document in the collection.<br>
+- $q$ is a query.<br>
+  
+
+Let the following definitions of the metrics of the vector model:<br>
+- $f_{i,j}$ be the frequency of occurrence of term $i$ in document $j$.<br>
+
+- $df_i$ be the document frequency for term $i$, that is, the number of documents where term $i$ occurs, defined as $df_i =  |\{j:f_{i,j} > 0\}|$.<br>
+
+- $tf_{i,j}$ be the term frequency for term $i$ in document $j$, defined as $$tf_{i,j} = 1 + log_2(f_{i,j})$$<br>
+
+
+- $idf_i$ be the inverse document frequency defined for term $i$, defined as $$idf_i = log\dfrac{N}{df_i}$$<br>
+
+- Let $w_{i,j}$ be the term weights or TF-IDF weights for term $i$ and document $j$, defined as $$w_{i,j} = \begin{cases} tf_{i,j} \cdot idf_{i} & \text{if } f_{i,j} > 0\\ 0 & \text{otherwise} \end{cases}$$<br>
+
+Similarly, we define the frequency $f_{i,q}$, term frequency $t_{i,q}$, and weights $w_{i,q}$ of term $i$ for query $q$. <br>
+
+Let $\overrightarrow{d_j} = [w_{1,j}, w_{2,j}, ..., w_{t,j}]^T$ be the weighted vector for document $j$<br> Let $\overrightarrow{q} = [w_{1,q}, w_{1,q}, ..., w_{t,q}]^T$ be the weighted vector for query $q$.
+
+We define the similarity between document $j$ and query $q$ as the cosine for the angle between vectors $\overrightarrow{d_j}$ and $\overrightarrow{q}$: $$\text{sim}(\overrightarrow{d_j}, \overrightarrow{q}) = \dfrac{\langle \overrightarrow{d_j}, \overrightarrow{q} \rangle}{||\overrightarrow{d_j}|| \cdot ||\overrightarrow{q}||}$$ where $\langle \cdot, \cdot\rangle$ is the inner product of two vectors and $||\cdot||$ is the Euclidean norm of a vector, both in space $\mathbb{R}^t$. This formula is also called the cosine similarity between vectors.
+
+We define our ranking for our query $q$ as the first top $K$ documents retrieved by ordering our similarities in a descending way. If our sorted similarities are $$\text{sim}(\overrightarrow{d}_{(1)}, \overrightarrow{q}) \geq \text{sim}(\overrightarrow{d}_{(2)}, \overrightarrow{q}) \geq ... \geq \text{sim}(\overrightarrow{d}_{(K)}, \overrightarrow{q}) \geq ... \geq \text{sim}(\overrightarrow{d}_{(N)}, \overrightarrow{q})$$
+Therefore, our retrieved documents are those in the $K \leq N$ ordered greater scores, that is, the tuple of document indices $(j : j = (r))_{r=1}^K$, where $(\cdot)$ is a function that assings a rank number $r \in {1, ..., N}$ to the real document index number $j \in {1, ..., N}$.
+
+## Part 2: Evaluation 
+ 
+1.  Implement the following evaluation metrics to assess the effectiveness of your retrieval solutions. These metrics will help you measure how well your system retrieves relevant documents for each query: 
+    - i.  Precision@K (P@K) 
+    - ii.  Recall@K (R@K) 
+    - iii.  Average Precision@K (P@K) 
+    - iv.  F1-Score@K 
+    - v.  Mean Average Precision (MAP) 
+    - vi.  Mean Reciprocal Rank (MRR) 
+    - vii. Normalized Discounted Cumulative Gain (NDCG) 
+
+2.  Apply the evaluation metrics you have implemented to the search results and relevance judgments provided in validation_labels.csv for the predefined queries. When reporting evaluation results, provide only numeric values, rounded to three decimal places. Do not include textual explanations or additional statistics in this section. 
+    - a.  Query 1: women full sleeve sweatshirt cotton 
+    - b.  Query 2: men slim jeans blue 
+ 
+3.  You will act as expert judges by establishing the ground truth for each document and 
+query.  
+    - a.  For the test queries you defined in Part 1, Step 2 during indexing, assign a binary relevance label to each document: 1 if the document is relevant to the query, or 0 if it is not. 
+    - b.  Comment on each of the evaluation metrics, stating how they differ, and which information gives each of them. Analyze your results. 
+    - c.  Analyze the current search system and identify its main problems or limitations. For each issue you find, propose possible ways to resolve it. Consider aspects such as retrieval accuracy, ranking quality, handling of different field types, query formulation, and indexing strategies.
