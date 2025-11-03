@@ -47,7 +47,7 @@ class Ranking:
         self.scores_df = None
         self.topK = None
 
-    def _set_items(self, items: pd.Series, type: Literal["document", "query"]) -> None:
+    def set_items(self, items: pd.Series, type: Literal["document", "query"]) -> None:
         """Sets documents or queries to the ranking object."""
         if type == "document":
             self.documents = items
@@ -64,11 +64,11 @@ class Ranking:
     
     def set_documents(self, documents: pd.Series) -> None:
         """Sets documents to the ranking object."""
-        self._set_items(documents, "document")
+        self.set_items(documents, "document")
 
     def set_queries(self, queries: pd.Series) -> None:
         """Sets queries to the ranking object."""
-        self._set_items(queries, "query")
+        self.set_items(queries, "query")
 
     def get_df(self) -> dict:
         """
@@ -100,8 +100,9 @@ class Ranking:
     
     def get_f(self, type: Literal["document", "query"]) -> dict:
         """
-        Get frequencies of occurrence of term in document for all documents 
-        and terms as a dictionary (document, (term, frequency)).
+        Get frequencies of occurrence of term in document or for all documents 
+        and terms as a dictionary (document, (term, frequency)). It can also
+        be computed for queries as a dictionary (query, (term, frequency)).
         """
         if self.f[type] is not None:
             return self.f[type]
@@ -112,8 +113,8 @@ class Ranking:
 
     def get_tf(self, type: Literal["document", "query"]) -> dict:
         """
-        Get term frequencies for all documents and terms as a dictionary 
-        (document, (term, frequency)).
+        Get term frequencies the terms of documents or queries as a dictionary 
+        (document or query, (term, frequency)).
         """
         if self.tf[type] is not None:
             return self.tf[type]
@@ -124,7 +125,8 @@ class Ranking:
     
     def get_tfidf(self, type: Literal["document", "query"]) -> dict:
         """
-        Get term weights for a queries as dict (query, (term, wieght)).
+        Get term weights for documents or queries as dict 
+        (document or query, (term, wieght)).
         """
         if self.w[type] is not None:
             return self.w[type]
@@ -264,6 +266,7 @@ class Ranking:
         norm = math.sqrt(norm)
         return norm
     
+    @staticmethod
     def get_top_scores(document_scores: dict, topK: int) -> dict:
         """
         Get the top documents scores as a dictionary (document, score) given an
