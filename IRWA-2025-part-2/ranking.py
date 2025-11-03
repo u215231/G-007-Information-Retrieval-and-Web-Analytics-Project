@@ -47,7 +47,7 @@ class Ranking:
         self.scores_df = None
         self.topK = None
 
-    def set_items(self, items: pd.Series, type: Literal["document", "query"]) -> None:
+    def _set_items(self, items: pd.Series, type: Literal["document", "query"]) -> None:
         """Sets documents or queries to the ranking object."""
         if type == "document":
             self.documents = items
@@ -64,11 +64,11 @@ class Ranking:
     
     def set_documents(self, documents: pd.Series) -> None:
         """Sets documents to the ranking object."""
-        self.set_items(documents, "document")
+        self._set_items(documents, "document")
 
     def set_queries(self, queries: pd.Series) -> None:
         """Sets queries to the ranking object."""
-        self.set_items(queries, "query")
+        self._set_items(queries, "query")
 
     def get_df(self) -> dict:
         """

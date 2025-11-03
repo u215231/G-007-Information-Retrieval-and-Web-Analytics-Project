@@ -9,18 +9,21 @@ class Evaluation:
 
     search_results: pd.DataFrame
     """Search Results dataframe containing at least columns (query_id, labels, score)."""
+    query_id: int | str
+    """Some identifier for the query category which is selected."""
+    query_text: str
+    """Some query text (used only for the print of evaluations)."""
     labels: np.ndarray
     """Ground truth relevance labels (1 = relevant, 0 = non-relevant)."""
     scores: np.ndarray
     """Predicted ranking scores for the documents."""
-    query_id: int | str
-    """Some identifier for the query category which is selected"""
 
-    def __init__(self, search_results: pd.DataFrame, query_id) -> None:
+    def __init__(self, search_results: pd.DataFrame, query_id, query_text: str = None) -> None:
         self.search_results = search_results
         self.scores = self._select_scores(query_id)
         self.labels = self._select_labels(query_id)
         self.query_id = query_id
+        self.query_text = query_text
 
     def _select_labels(self, query_id):
         return np.array(self.search_results[self.search_results["query_id"] == query_id]["labels"])
@@ -81,7 +84,7 @@ class Evaluation:
         labels = self.labels[order[:k]]  
         if np.sum(labels) == 0:  
             return 0.0
-        return (np.argmax(labels == 1) + 1)  
+        return 1.0 / (np.argmax(labels == 1) + 1)
     
     def mrr_at_k(self, k: int = 10) -> float:
         """Compute Mean Reciprocal Rank Scores@K."""
@@ -108,16 +111,14 @@ class Evaluation:
         return self.dcg_at_k(self.labels, self.scores, k) / dcg_max
     
     def print_evaluation(self, k: int = 10) -> float:
-        print(
-            f"""
-            query_id: {self.query_id}
-            1: Precision at K: {self.precision_at_k(k):.3f}
-            2: Recall at K: {self.recall_at_k(k):.3f}
-            3: Average Precision at K: {self.avg_precision_at_k(k):.3f}
-            4: F1 score at K: {self.f1_score_at_k(k):.3f}
-            5: Mean Average Precision at K: {self.map_at_k(k):.3f}
-            6: Mean Reciprocal Rank at K: {self.mrr_at_k(k):.3f}
-            7: Normal Discount Cumulative Gain at K: {self.ndcg_at_k(k):.3f}
-            """, 
-            end=""
-        )
+        if self.query_text is None:
+            print(f"Query: {self.query_id}")
+        else:
+            print(f"Query {self.query_id}: {self.query_text}")
+        print(f"1: Precision at K: {self.precision_at_k(k):.3f}")
+        print(f"2: Recall at K: {self.recall_at_k(k):.3f}")
+        print(f"3: Average Precision at K: {self.avg_precision_at_k(k):.3f}")
+        print(f"4: F1 score at K: {self.f1_score_at_k(k):.3f}")
+        print(f"5: Mean Average Precision at K: {self.map_at_k(k):.3f}")
+        print(f"6: Mean Reciprocal Rank at K: {self.mrr_at_k(k):.3f}")
+        print(f"7: Normal Discount Cumulative Gain at K: {self.ndcg_at_k(k):.3f}")
