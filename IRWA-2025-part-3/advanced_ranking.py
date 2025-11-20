@@ -51,6 +51,9 @@ class Ranking:
         self.scores = None
         self.scores_df = None
         self.topK = None
+        self.doc_lengths = None
+        self.avgdl = None
+
 
     def _set_items(self, items: pd.Series, type: Literal["document", "query"]) -> None:
         """Sets documents or queries to the ranking object."""
@@ -58,6 +61,8 @@ class Ranking:
             self.documents = items
             self.df = None
             self.idf = None
+            self.doc_lengths = None
+            self.avgdl = None
         else:
             self.queries = items
         self.f[type] = None
@@ -66,14 +71,17 @@ class Ranking:
         self.scores = None
         self.scores_df = None
         self.topK = None
-    
+
+
     def set_documents(self, documents: pd.Series) -> None:
         """Sets documents to the ranking object."""
         self._set_items(documents, "document")
 
+
     def set_queries(self, queries: pd.Series) -> None:
         """Sets queries to the ranking object."""
         self._set_items(queries, "query")
+
 
     def get_df(self) -> dict:
         """
@@ -90,6 +98,7 @@ class Ranking:
         self.df = df
         return df
 
+
     def get_idf(self) -> dict: 
         """
         Get inverse document frequencies for all terms in documents as 
@@ -102,7 +111,8 @@ class Ranking:
         idf = {term: math.log(N / df[term], 2) for term in df}
         self.idf = idf
         return idf 
-    
+
+
     def get_f(self, type: Literal["document", "query"]) -> dict:
         """
         Get frequencies of occurrence of term in document for all documents 
@@ -115,6 +125,7 @@ class Ranking:
         self.f[type] = f
         return f
 
+
     def get_tf(self, type: Literal["document", "query"]) -> dict:
         """
         Get term frequencies for all documents and terms as a dictionary 
@@ -126,7 +137,8 @@ class Ranking:
         tf = {document: Ranking.get_tf_from_frequency(f[document]) for document in f}
         self.tf[type] = tf
         return tf
-    
+
+
     def get_tfidf(self, type: Literal["document", "query"]) -> dict:
         """
         Get term weights for a queries as dict (query, (term, wieght)).
@@ -138,6 +150,7 @@ class Ranking:
         w = {query: Ranking.get_weights_from_tf_idf(tf[query], idf) for query in tf}
         self.w[type] = w
         return w
+
 
     def rank_tfidf_dict(self, topK: int = 10) -> dict:
         """ 
@@ -154,11 +167,12 @@ class Ranking:
             scores[q] = {}
             for d, document_weights in w["document"].items():
                 scores[q][d] = Ranking.get_cosine_similarity(document_weights, query_weigths)
-            scores[q] = Ranking.get_top_scores(scores[q], topK)
+            scores[q] = Ranking.get_top_scores_dict(scores[q], topK)
         self.scores = scores
         self.topK = topK
         return scores
-    
+
+
     def rank_tfidf_dataframe(
             self, 
             use_query_text: bool = False,                
@@ -189,6 +203,7 @@ class Ranking:
         self.scores_df = scores_df
         return scores_df
 
+
     def print_rankings(self, topK: int = 10) -> None:
         """
         Print rankings of topK documents for all queries one by one.
@@ -214,6 +229,176 @@ class Ranking:
             self.scores = scores_merged
         self.topK = topK
 
+
+    def rank_tfidf_filtered(
+            self, 
+            matching_doc_ids: list[str], 
+            query_terms: list[str], 
+            topK: int = 10
+        ) -> list[tuple[str, float]]:
+        """
+        Ranks the filtered subset of documents (matching_doc_ids) using 
+        TF-IDF + Cosine Similarity.
+        
+        Arguments:
+            matching_doc_ids: Document IDs that passed the conjunctive filter.
+            query_terms: Tokenized and processed query terms.
+            topK: The number of top results to return.
+        
+        Returns:
+            List of (Doc ID, Score) tuples, sorted descending.
+        """
+
+        raw_query_text = " ".join(query_terms) 
+        query_tf = Ranking.get_frequencies_from_text(raw_query_text)
+        
+        idf = self.get_idf()
+        W_Q = Ranking.get_weights_from_tf_idf(query_tf, idf)
+        
+        filtered_scores = {}
+        doc_weights = self.w.get('document') 
+        
+        if doc_weights is None:
+            doc_weights = self.get_tfidf(type="document")
+        
+        for doc_id in matching_doc_ids:
+            W_D = doc_weights.get(doc_id)
+            score = Ranking.get_cosine_similarity(document_vector=W_D, query_vector=W_Q)
+            filtered_scores[doc_id] = score
+    
+        return Ranking.get_top_scores_list(filtered_scores, topK)
+
+
+    def calculate_bm25_statistics(self) -> tuple[dict, int]:
+        """
+        Calculates and stores the length of each document (doc_lengths) 
+        and the average document length (avgdl).
+        
+        Relies on self.f['document'] being pre-calculated.
+        """
+        doc_frequencies = self.get_f("document") 
+        doc_lengths = {}
+        total_length = 0
+        
+        for doc_id, terms_freqs in doc_frequencies.items():
+            length = sum(terms_freqs.values())
+            doc_lengths[doc_id] = length
+            total_length += length
+
+        self.doc_lengths = doc_lengths
+        self.avgdl =  total_length / len(doc_lengths) if doc_lengths else 0.0
+
+        return self.doc_lengths.copy(), self.avgdl 
+
+
+    def get_score_bm25_term(self, term: str, doc_id: str, k1: float, b: float) -> float:
+        """
+        Calculates the Best Match 25 score contribution for a single term in a single document.
+        """
+
+        doc_tfs = self.f['document'].get(doc_id, {})
+        f_td = doc_tfs.get(term, 0)
+        
+        IDF_t = self.idf.get(term, 0)
+        
+        L_d = self.doc_lengths.get(doc_id, 1) 
+        avgdl = self.avgdl
+        
+        if f_td == 0 or IDF_t == 0:
+            return 0.0
+        
+        numerator = f_td * (k1 + 1)
+        
+        length_normalization = k1 * (1 - b + b * (L_d / avgdl))
+        denominator = f_td + length_normalization
+
+        return IDF_t * (numerator / denominator)
+    
+
+    def rank_bm25(
+            self, 
+            matching_doc_ids: list[str], 
+            query_terms: list[str], 
+            topK: int = 10, 
+            k1: float = 1.2, 
+            b: float = 0.75
+        ) -> list[tuple[str, float]]:
+        """
+        Ranks the documents given a query following the Best Match 25 algorithm. 
+        """
+        filtered_scores = {}
+    
+        for doc_id in matching_doc_ids:
+            doc_bm25_score = 0.0
+            for term in query_terms:
+                term_score = self.get_score_bm25_term(term, doc_id, k1, b)
+                doc_bm25_score += term_score
+
+            filtered_scores[doc_id] = doc_bm25_score
+
+        return Ranking.get_top_scores_list(filtered_scores, topK)
+    
+    def rank_custom_score(
+            self, 
+            matching_doc_ids: list[str], 
+            query_terms: list[str], 
+            topK: int, 
+            alpha: float = 0.7
+        ) -> list[tuple[str, float]]:
+        """
+        Ranks the filtered subset of documents using a hybrid Custom Score 
+        (TF-IDF Relevance + Metadata Score).
+        
+        Arguments:
+            alpha: controls the weight of Relevance Score (0.7 means 70% relevance, 30% metadata).
+
+        Returns: 
+            ...
+        """
+        
+        raw_query_text = " ".join(query_terms) 
+        query_tf = Ranking.get_frequencies_from_text(raw_query_text)
+        idf = self.get_idf()
+        W_Q = Ranking.get_weights_from_tf_idf(query_tf, idf)
+        
+        if not W_Q:
+            return []
+
+        # TODO: initializetion of average rating
+        documents_df = pd.DataFrame(self.documents)
+        documents_df['average_rating'] = 0 
+        
+        MIN_RATING = documents_df['average_rating'].min()
+        MAX_RATING = documents_df['average_rating'].max()
+        RATING_RANGE = MAX_RATING - MIN_RATING
+        
+        doc_weights = self.w["document"] 
+        custom_scores = {}
+
+        for doc_id in matching_doc_ids:
+            W_D = doc_weights.get(doc_id)
+            if W_D is None:
+                rel_score = 0.0
+            else:
+                rel_score = Ranking.get_cosine_similarity(document_vector=W_D, query_vector=W_Q)
+
+            try:
+                doc_row = self.documents[self.documents[self.identifier_column] == doc_id].iloc[0]
+                raw_rating = doc_row['average_rating'] 
+            except Exception:
+                raw_rating = MIN_RATING 
+                
+            if RATING_RANGE > 0:
+                meta_score = (raw_rating - MIN_RATING) / RATING_RANGE
+            else:
+                meta_score = 0.5 
+            custom_score = (alpha * rel_score) + ((1 - alpha) * meta_score)
+            custom_scores[doc_id] = custom_score
+            
+        sorted_scores = sorted(custom_scores.items(), key=lambda item: item[1], reverse=True)
+        
+        return sorted_scores[:topK]
+    
     @staticmethod
     def get_frequencies_from_text(text: str) -> dict:
         """
@@ -269,168 +454,21 @@ class Ranking:
         norm = math.sqrt(norm)
         return norm
     
-    def get_top_scores(document_scores: dict, topK: int) -> dict:
+    @staticmethod
+    def get_top_scores_list(scores: dict, topK: int) -> list:
+        """
+        Get the top documents scores as a list (document, score) given an
+        integer of the topK documents to be returned.
+        """
+        return sorted(scores.items(), key=lambda item: item[1], reverse=True)[:topK]
+    
+    @staticmethod
+    def get_top_scores_dict(document_scores: dict, topK: int) -> dict:
         """
         Get the top documents scores as a dictionary (document, score) given an
         integer of the topK documents to be returned.
         """
-        s = sorted(document_scores.items(), key=lambda item: item[1], reverse=True)
-        return dict(s[:topK])
-    
-
-
-    def rank_tfidf_filtered(self, matching_doc_ids: list[str], query_terms: list[str], topK: int = 10) -> list[tuple[str, float]]:
-        """
-        Ranks the filtered subset of documents (matching_doc_ids) using 
-        TF-IDF + Cosine Similarity.
-        
-        Inputs:
-        - matching_doc_ids: Document IDs that passed the conjunctive filter.
-        - query_terms: Tokenized and processed query terms.
-        - topK: The number of top results to return.
-        
-        Output:
-        - List of (Doc ID, Score) tuples, sorted descending.
-        """
-
-        raw_query_text = " ".join(query_terms) 
-        query_tf = Ranking.get_frequencies_from_text(raw_query_text)
-        
-        idf = self.get_idf()
-        W_Q = Ranking.get_weights_from_tf_idf(query_tf, idf)
-        
-        filtered_scores = {}
-        
-        doc_weights = self.w.get('document') 
-        
-        if doc_weights is None:
-            doc_weights = self.get_tfidf(type="document")
-        
-        for doc_id in matching_doc_ids:
-            
-            W_D = doc_weights.get(doc_id)
-            
-            score = Ranking.get_cosine_similarity(document_vector=W_D, query_vector=W_Q)
-            
-            filtered_scores[doc_id] = score
-            
-        sorted_scores = sorted(filtered_scores.items(), key=lambda item: item[1], reverse=True)
-        
-        return sorted_scores[:topK]
-
-
-    def calculate_bm25_statistics(self):
-        """
-        Calculates and stores the length of each document (doc_lengths) 
-        and the average document length (avgdl).
-        
-        Relies on self.f['document'] being pre-calculated.
-        """
-        if self.f.get('document') is None:
-            self.get_f(type="document") 
-
-        doc_lengths = {}
-        total_length = 0
-        
-        for doc_id, terms_freqs in self.f['document'].items():
-            length = sum(terms_freqs.values())
-            doc_lengths[doc_id] = length
-            total_length += length
-
-        self.doc_lengths = doc_lengths
-
-        if doc_lengths:
-            self.avgdl = total_length / len(doc_lengths)
-        else:
-            self.avgdl = 0.0
-
-
-
-    def get_score_bm25_term(self, term: str, doc_id: str, k1: float, b: float) -> float:
-        """
-        Calculates the BM25 score contribution for a single term in a single document.
-        """
-
-        doc_tfs = self.f['document'].get(doc_id, {})
-        f_td = doc_tfs.get(term, 0)
-        
-        IDF_t = self.idf.get(term, 0)
-        
-        L_d = self.doc_lengths.get(doc_id, 1) 
-        avgdl = self.avgdl
-        
-        if f_td == 0 or IDF_t == 0:
-            return 0.0
-        
-        numerator = f_td * (k1 + 1)
-        
-        length_normalization = k1 * (1 - b + b * (L_d / avgdl))
-        denominator = f_td + length_normalization
-
-        return IDF_t * (numerator / denominator)
-    
-
-    def rank_bm25(self, matching_doc_ids: list[str], query_terms: list[str], topK: int = 10, k1: float = 1.2, b: float = 0.75) -> list[tuple[str, float]]:
-        filtered_scores = {}
-    
-        for doc_id in matching_doc_ids:
-            doc_bm25_score = 0.0
-            for term in query_terms:
-                term_score = self.get_score_bm25_term(term, doc_id, k1, b)
-                doc_bm25_score += term_score
-
-            filtered_scores[doc_id] = doc_bm25_score
-            
-        sorted_scores = sorted(filtered_scores.items(), key=lambda item: item[1], reverse=True)
-        
-        return sorted_scores[:topK]
-    
-    def rank_custom_score(self, matching_doc_ids: list[str], query_terms: list[str], topK: int, alpha: float = 0.7) -> list[tuple[str, float]]:
-        """
-        Ranks the filtered subset of documents using a hybrid Custom Score 
-        (TF-IDF Relevance + Metadata Score).
-        
-        alpha controls the weight of Relevance Score (0.7 means 70% relevance, 30% metadata).
-        """
-        
-        raw_query_text = " ".join(query_terms) 
-        query_tf = Ranking.get_frequencies_from_text(raw_query_text)
-        idf = self.get_idf()
-        W_Q = Ranking.get_weights_from_tf_idf(query_tf, idf)
-        
-        if not W_Q:
-            return []
-            
-        MIN_RATING = self.documents['average_rating'].min()
-        MAX_RATING = self.documents['average_rating'].max()
-        RATING_RANGE = MAX_RATING - MIN_RATING
-        
-        doc_weights = self.w.get('document') 
-        custom_scores = {}
-
-        for doc_id in matching_doc_ids:
-            W_D = doc_weights.get(doc_id)
-            if W_D is None:
-                rel_score = 0.0
-            else:
-                rel_score = Ranking.get_cosine_similarity(document_vector=W_D, query_vector=W_Q)
-
-            try:
-                doc_row = self.documents[self.documents[self.identifier_column] == doc_id].iloc[0]
-                raw_rating = doc_row['average_rating'] 
-            except Exception:
-                raw_rating = MIN_RATING 
-                
-            if RATING_RANGE > 0:
-                meta_score = (raw_rating - MIN_RATING) / RATING_RANGE
-            else:
-                meta_score = 0.5 
-            custom_score = (alpha * rel_score) + ((1 - alpha) * meta_score)
-            custom_scores[doc_id] = custom_score
-            
-        sorted_scores = sorted(custom_scores.items(), key=lambda item: item[1], reverse=True)
-        
-        return sorted_scores[:topK]
+        return dict(Ranking.get_top_scores_list(document_scores, topK))
     
 
     
