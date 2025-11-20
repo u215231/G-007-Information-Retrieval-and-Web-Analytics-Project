@@ -1,0 +1,5 @@
+{
+    "python.analysis.extraPaths": [
+        "./IRWA-2025-part-2"
+    ]
+}
