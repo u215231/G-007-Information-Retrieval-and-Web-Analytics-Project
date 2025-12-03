@@ -26,9 +26,15 @@ JSONEncoder.default = _default
 app = Flask(__name__)
 
 # random 'secret_key' is used for persisting data in secure cookie
-app.secret_key = os.getenv("SECRET_KEY")
+app.secret_key = (
+    os.getenv("SECRET_KEY") if os.getenv("SECRET_KEY") else "afgsreg86sr897b6st8b76va8er76fcs6g8d7"
+)
+
 # open browser dev tool to see the cookies
-app.session_cookie_name = os.getenv("SESSION_COOKIE_NAME")
+app.session_cookie_name = (
+    os.getenv("SESSION_COOKIE_NAME") if os.getenv("SESSION_COOKIE_NAME") else "IRWA_SEARCH_ENGINE"
+)
+
 # instantiate our search engine
 search_engine = SearchEngine()
 # instantiate our in memory persistence
@@ -38,14 +44,10 @@ rag_generator = RAGGenerator()
 
 # load documents corpus into memory.
 full_path = os.path.realpath(__file__)
-
 path, filename = os.path.split(full_path)
-print(full_path)
-print(path) 
-print(filename)
-file_path = path + "/" + os.getenv("DATA_FILE_PATH")
-
-exit()
+file_path = path + "/" + (
+    os.getenv("DATA_FILE_PATH") if os.getenv("DATA_FILE_PATH") else "data/fashion_products_dataset.json" 
+)
 
 corpus = load_corpus(file_path)
 # Log first element of corpus to verify it loaded correctly:

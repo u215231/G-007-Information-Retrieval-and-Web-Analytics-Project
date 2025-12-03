@@ -4,10 +4,11 @@ from myapp.search.objects import Document
 from typing import List, Dict
 
 
-def load_corpus(path) -> List[Document]:
+def load_corpus(path) -> Dict[str, Document]:
     """
     Load file and transform to dictionary with each document as an object for easier treatment when needed for displaying
-     in results, stats, etc.
+    in results, stats, etc.
+
     :param path:
     :return:
     """
@@ -18,7 +19,8 @@ def load_corpus(path) -> List[Document]:
 def _build_corpus(df: pd.DataFrame) -> Dict[str, Document]:
     """
     Build corpus from dataframe
-    :param df:
+
+    :param DataFrame df:
     :return:
     """
     corpus = {}
