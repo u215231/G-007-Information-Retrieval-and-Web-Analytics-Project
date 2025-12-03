@@ -1,4 +1,5 @@
 import os
+import uuid
 from json import JSONEncoder
 
 import httpagentparser  # for getting the user agent as json
@@ -59,6 +60,14 @@ print("\nCorpus is loaded... \n First element:\n", list(corpus.values())[0])
 def index():
     print("starting home url /...")
 
+    if "session_id" not in session:
+        session["session_id"] = str(uuid.uuid4())
+        # Register new session in analytics
+        analytics_data.register_session(session["session_id"])
+        print("New session registered:", session["session_id"])
+    else:
+        print("Existing session:", session["session_id"])
+
     # flask server creates a session by persisting a cookie in the user's browser.
     # the 'session' object keeps data between multiple requests. Example:
     session['some_var'] = "Some value that is kept in session"
@@ -68,6 +77,16 @@ def index():
 
     user_ip = request.remote_addr
     agent = httpagentparser.detect(user_agent)
+    analytics_data.register_request(
+        path=request.path,
+        user_ip=user_ip,
+        user_agent=user_agent
+    )
+    # debug prints as before
+    print("Raw user browser:", user_agent)
+    print("Remote IP:", user_ip)
+    print("JSON browser:", httpagentparser.detect(user_agent))
+    print("Current session:", session)
 
     print("Remote IP: {} - JSON user browser {}".format(user_ip, agent))
     print(session)
@@ -94,7 +113,7 @@ def search_form_post():
 
     print(session)
 
-    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response)
+    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response, search_id=search_id)
 
 
 @app.route('/doc_details', methods=['GET'])
@@ -114,16 +133,13 @@ def doc_details():
 
     # get the query string parameters from request
     clicked_doc_id = request.args["pid"]
-    print("click in id={}".format(clicked_doc_id))
+    search_id = request.args.get("search_id", type=int)
+    print(f"click in id={clicked_doc_id}, search_id={search_id}")
 
-    # store data in statistics table 1
-    if clicked_doc_id in analytics_data.fact_clicks.keys():
-        analytics_data.fact_clicks[clicked_doc_id] += 1
-    else:
-        analytics_data.fact_clicks[clicked_doc_id] = 1
+    analytics_data.register_click(search_id, clicked_doc_id)
 
     print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
-    print(analytics_data.fact_clicks)
+    print("fact_clicks:", analytics_data.fact_clicks)
     return render_template('doc_details.html')
 
 

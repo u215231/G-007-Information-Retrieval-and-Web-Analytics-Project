@@ -2,7 +2,7 @@ import random
 import numpy as np
 
 from myapp.search.objects import Document
-from solution.model.tfidf import TFIDF
+# from solution.model.tfidf import TFIDF
 import pandas as pd
 
 
