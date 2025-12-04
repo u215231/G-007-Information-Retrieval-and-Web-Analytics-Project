@@ -16,7 +16,6 @@ from myapp.generation.rag import RAGGenerator
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables from .env
 
-
 # *** for using method to_json in objects ***
 def _default(self, obj):
     return getattr(obj.__class__, "to_json", _default.default)(obj)
@@ -27,12 +26,8 @@ JSONEncoder.default = _default
 
 app = Flask(__name__)
 
-app.secret_key = (
-    os.getenv("SECRET_KEY") if os.getenv("SECRET_KEY") else "afgsreg86sr897b6st8b76va8er76fcs6g8d7"
-)
-app.session_cookie_name = (
-    os.getenv("SESSION_COOKIE_NAME") if os.getenv("SESSION_COOKIE_NAME") else "IRWA_SEARCH_ENGINE"
-)
+app.secret_key = os.getenv("SECRET_KEY")
+app.session_cookie_name = os.getenv("SESSION_COOKIE_NAME") 
 
 search_engine = SearchEngine()
 analytics_data = AnalyticsData()
@@ -40,10 +35,8 @@ rag_generator = RAGGenerator()
 
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
-file_path = path + "/" + (
-    os.getenv("DATA_FILE_PATH") if os.getenv("DATA_FILE_PATH") else "data/fashion_products_dataset.json" 
-)
-file_csv_path = path + "/" + "data/fashion_products_dataset_processed_review.csv" 
+file_path = path + "/" + os.getenv("DATA_FILE_PATH")
+file_csv_path = path + "/" + os.getenv("DATA_CSV_FILE_PATH") 
 
 my_corpus = pd.read_csv(file_csv_path)
 corpus = load_corpus(file_path)
