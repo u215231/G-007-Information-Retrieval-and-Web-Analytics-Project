@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block content %}
+    <div style="margin: 2rem 0rem; max-width: 50rem;">
+        <form class="d-flex" method="POST" onSubmit='return validate();' action="/search">
+            <input class="form-control me-2" name="search-query" type="search" placeholder="Search" aria-label="Search"
+                    autofocus="autofocus">
+            <button class="btn btn-primary" type="submit" onclick='this.form.submit();'>Search</button>
+            <input name="upf-irwa-hidden" type="hidden" value="123">
+        </form>
+    </div>
     Found <strong>{{ found_counter }}</strong> results...
     <hr>
     {% if rag_response %}
@@ -12,24 +20,41 @@
     <hr>
     {% for item in results_list %}
         <div class="pb-3">
-            <div class="doc-title">
+            <div class="element-div doc-title">
                 <a href="{{ url_for('doc_details', pid=item.pid, search_id=search_id) }}">
                     {{ item.title }}
                 </a>
             </div>
-            <div class="doc-desc">
-                {{ item.doc_date }} — {{ item.description }}
+            <div class="element-div doc-desc">
+                {{ item.description | truncate(150) }}
             </div>
-            <div class="doc-price">
-                Selling Price: ${{ item.selling_price }} - {{ item.discount }}% discount off
-            </div>
-            {% if item.average_rating == item.average_rating %}
-                <div class="doc-rating">Rating: {{ item.average_rating }}/5.0</div>
+            {% if item.discount != None %}
+                <div class="element-div doc-price">
+                    <span class="font-weight-bold">${{ item.selling_price }}</span> 
+                    <span class="text-muted fs-6" style="text-decoration: line-through; text-decoration-color:red; text-decoration-thickness:1.5px; font-size: small;">${{ item.actual_price }}</span> 
+                    <span class="badge text-danger text-white">{{ item.discount }}% off</span>
+                </div>
             {% else %}
-                <div class="doc-rating">Rating: —</div>
+                <div class="element-div doc-price">
+                    <span class="font-weight-bold">${{ item.selling_price }}</span> 
+                </div>
+            {% endif %}
+            {% if item.average_rating != None%}
+                <div class="element-div doc-rating">
+                    <span class="badge h4" style="color:#FF8C00">★ {{ item.average_rating }}/5.0</span>
+                </div>
+            {% else %}
+                <div class="element-div doc-rating">
+                    <span class="badge h4" style="color:#FF8C00">★ /5.0</span>
+                </div>
             {% endif %}
         </div>
 
     {% endfor %}
+<style>
+    .element-div{
+        padding:0.25rem 0rem;
+    }
+</style>
 {% endblock %}
 

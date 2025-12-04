@@ -52,7 +52,7 @@
                 <tr>
                     <th>Time</th>
                     <th>Doc ID</th>
-                    <th>Query ID</th>
+                    <th>Query</th>
                     <th>Dwell Time (seconds)</th>
                 </tr>
             </thead>
@@ -61,12 +61,15 @@
                 <tr>
                     <td>{{ event.timestamp.strftime('%H:%M:%S') }}</td>
                     <td>{{ event.doc_id }}</td>
-                    <td>{{ event.query_id }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border">ID: {{ event.query_id }}</span>
+                        {{ query_id_to_term.get(event.query_id, 'Unknown') }}
+                    </td>
                     <td>
                         {% if event.dwell_time > 0 %}
                             <span style="color: green; font-weight: bold;">{{ event.dwell_time }} s</span>
                         {% else %}
-                            <span style="color: gray;">(active or missed)</span>
+                            <span style="color: gray;">(active/missed)</span>
                         {% endif %}
                     </td>
                 </tr>
