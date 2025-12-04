@@ -147,7 +147,8 @@ def search_results():
         results_list=results,
         page_title="Results",
         found_counter=found_count,
-        rag_response=rag_response
+        rag_response=rag_response,
+        search_id=search_id
     )
 
 
@@ -204,36 +205,33 @@ def stats():
         )
         docs.append(doc)
     
-    # simulate sort by ranking
     docs.sort(key=lambda doc: doc.count, reverse=True)
 
     id_to_terms = {q['query_id']: q['terms'] for q in analytics_data.fact_queries}
     
-    # 2. Map Document ID -> Set of unique queries
     doc_terms_map = {}
     for event in analytics_data.click_events:
         d_id = event['doc_id']
         q_id = event['query_id']
         
-        # Retrieve the search terms using the query_id
         term = id_to_terms.get(q_id)
         
         if term:
             if d_id not in doc_terms_map:
-                doc_terms_map[d_id] = set() # Use a set to avoid duplicates automatically
+                doc_terms_map[d_id] = set()
             doc_terms_map[d_id].add(term)
             
-    # 3. Convert sets to sorted lists for the template
     doc_queries_map = {k: sorted(list(v)) for k, v in doc_terms_map.items()}
-    
-    # Pass requests data
+    query_id_to_term = {q['query_id']: q['terms'] for q in analytics_data.fact_queries}
+
     return render_template('stats.html', 
                            clicks_data=docs, 
                            requests_data=analytics_data.requests, 
                            sessions_data=analytics_data.sessions, 
                            queries_data=analytics_data.fact_queries,
                            click_events_data=analytics_data.click_events,
-                           doc_queries_map=doc_queries_map)
+                           doc_queries_map=doc_queries_map,
+                           query_id_to_term=query_id_to_term)
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
@@ -246,8 +244,11 @@ def dashboard():
     # simulate sort by ranking
     visited_docs.sort(key=lambda doc: doc.counter, reverse=True)
 
-    for doc in visited_docs: print(doc)
-    return render_template('dashboard.html', visited_docs=visited_docs)
+    query_stats = analytics_data.get_query_stats()
+
+    return render_template('dashboard.html', 
+                           visited_docs=visited_docs, 
+                           query_stats=query_stats)
 
 
 # New route added for generating an examples of basic Altair plot (used for dashboard)

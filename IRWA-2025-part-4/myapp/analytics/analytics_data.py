@@ -32,6 +32,24 @@ class AnalyticsData:
         })
         return query_id
     
+    def get_query_stats(self):
+        """
+        Returns a list of queries and their counts, sorted by popularity.
+        """
+        counts = {}
+        for q in self.fact_queries:
+            term = q['terms']
+            if term: # Ensure we don't count empty queries if any
+                counts[term] = counts.get(term, 0) + 1
+
+        
+        # Convert to a list of dictionaries for easier handling in the template
+        stats = [{'term': term, 'count': count} for term, count in counts.items()]
+        
+        # Sort by count (descending)
+        stats.sort(key=lambda x: x['count'], reverse=True)
+        return stats
+
     def register_click(self, query_id: int, doc_id: str, description: str = "") -> int:
         """
         Register a click on a document for a given query.
