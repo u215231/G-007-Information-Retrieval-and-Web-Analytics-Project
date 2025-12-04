@@ -1,6 +1,8 @@
 .container {
-    max-width: 800px;
+    max-width: 100vw;
     padding-top: 10px;
+    padding-left:10%;
+    padding-right:10%;
     position: relative;
     font-family: 'Helvetica Neue', sans-serif;
     color: #404246;

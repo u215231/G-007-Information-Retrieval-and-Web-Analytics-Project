@@ -1,18 +1,86 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Document Detail - IRWA Search Engine</title>
-</head>
-<body>
-<div><a href="/" >Home</a></div>
-<div><a href="/stats" >Stats</a></div>
-<div><a href="/dashboard" >Dashboard</a></div>
-<h1>Document Detail Page</h1>
-<p>This is a placeholder for document details.</p>
-<p>Here you can display more information about the document.</p>
-<p>For example, you might show the full text of the document, metadata, or other relevant details.</p>
-<p>You can also include links to related documents or resources.</p>
-<p>Feel free to customize this page to fit the needs of your application.</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block page_title %}{{ page_title }}{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <a href="javascript:history.back()" class="btn btn-outline-secondary border-0 mb-3">&larr; Back to Results</a> 
+
+    <div class="row">
+        <div class="col-md-5">
+            {% if doc.image %}
+                <img src="{{ doc.image }}" alt="{{ doc.title }}" class="img-fluid rounded shadow-sm" style="width: 30rem;">
+            {% else %}
+                <div class="text-center p-5 bg-light text-muted border rounded">
+                    <p>No Image Available</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-7">
+            <h5 class="text-muted">{{ doc.category }} / {{ doc.subcategory }}</h5>
+            <h1 class="display-6">{{ doc.title }}</h1>
+            
+            <p class="text-secondary fw-bold">Brand: <span class="text-dark">{{ doc.brand }}</span></p>
+
+            <div class="mb-3">
+                <span class="badge bg-warning text-dark fs-6">★ {{ doc.average_rating }} / 5</span>
+            </div>
+
+            <div>
+                {% if doc.discount > 0 %}
+                    <h3 class="text-danger mb-0">
+                        ${{ doc.selling_price }} 
+                        <small class="text-muted text-decoration-line-through fs-6">${{ doc.actual_price }}</small>
+                    </h3>
+                    <span class="badge bg-danger text-white">SAVE {{ doc.discount }}%</span>
+                {% else %}
+                    <h3>${{ doc.selling_price }}</h3>
+                {% endif %}
+            </div>
+
+            <hr>
+
+            <h5>Description</h5>
+            <p class="lead" style="font-size: 1rem;">
+                {{ doc.description }}
+            </p>
+        </div>
+    </div>
+</div>    
+
+<script>
+    // 1. Capture Start Time
+    let startTime = Date.now();
+    let eventId = {{ event_id }}; // Passed from Flask
+
+    // 2. Function to send the duration
+    function sendDwellTime() {
+        let endTime = Date.now();
+        let duration = (endTime - startTime) / 1000; // Convert ms to seconds
+
+        let data = JSON.stringify({
+            event_id: eventId,
+            dwell_time: duration
+        });
+
+        // navigator.sendBeacon is reliable for "page close" events
+        if (navigator.sendBeacon) {
+            let blob = new Blob([data], {type: 'application/json'});
+            navigator.sendBeacon('/log_dwell_time', blob);
+        } else {
+            fetch('/log_dwell_time', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: data,
+                keepalive: true
+            });
+        }
+    }
+
+    // 3. Trigger when user leaves the page (close tab, back button, reload)
+    window.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            sendDwellTime();
+        }
+    });
+</script>
+{% endblock %}
