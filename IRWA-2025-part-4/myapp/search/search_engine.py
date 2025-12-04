@@ -33,6 +33,7 @@ class SearchEngine:
                 title=str(doc["title"]), 
                 description="" if str(doc["description"]) == "nan" else str(doc["description"]), 
                 selling_price=str(doc["selling_price"]), 
+                actual_price=str(doc["actual_price"]),
                 discount=str(doc["discount"]), 
                 average_rating=str(doc["average_rating"]),
                 url="doc_details?pid={}&search_id={}&param2=2".format(doc_id, search_id)
