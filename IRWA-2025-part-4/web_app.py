@@ -1,6 +1,7 @@
 import os
 import uuid
 from json import JSONEncoder
+from flask import jsonify
 
 import httpagentparser  # for getting the user agent as json
 from flask import Flask, render_template, session
@@ -77,11 +78,15 @@ def index():
 
     user_ip = request.remote_addr
     agent = httpagentparser.detect(user_agent)
+    
+    # Pass the parsed agent to register_request
     analytics_data.register_request(
         path=request.path,
         user_ip=user_ip,
-        user_agent=user_agent
+        user_agent=user_agent,
+        agent_parsed=agent
     )
+
     # debug prints as before
     print("Raw user browser:", user_agent)
     print("Remote IP:", user_ip)
@@ -118,30 +123,30 @@ def search_form_post():
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
-    """
-    Show document details page
-    ### Replace with your custom logic ###
-    """
+    # ... (keep existing session logic) ...
 
-    # getting request parameters:
-    # user = request.args.get('user')
-    print("doc details session: ")
-    print(session)
-
-    res = session["some_var"]
-    print("recovered var from session:", res)
-
-    # get the query string parameters from request
     clicked_doc_id = request.args["pid"]
     search_id = request.args.get("search_id", type=int)
-    print(f"click in id={clicked_doc_id}, search_id={search_id}")
 
-    analytics_data.register_click(search_id, clicked_doc_id)
+    # UPDATED: Register click and capture the event_id
+    event_id = analytics_data.register_click(search_id, clicked_doc_id)
 
-    print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
-    print("fact_clicks:", analytics_data.fact_clicks)
-    return render_template('doc_details.html')
+    # UPDATED: Pass event_id to the template
+    return render_template('doc_details.html', doc_id=clicked_doc_id, event_id=event_id)
 
+@app.route('/log_dwell_time', methods=['POST'])
+def log_dwell_time():
+    """
+    New route to receive dwell time data from the frontend.
+    """
+    data = request.json
+    event_id = data.get('event_id')
+    dwell_time = data.get('dwell_time')
+    
+    if event_id is not None:
+        analytics_data.update_dwell_time(event_id, float(dwell_time))
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error"}), 400
 
 @app.route('/stats', methods=['GET'])
 def stats():
@@ -159,8 +164,34 @@ def stats():
     
     # simulate sort by ranking
     docs.sort(key=lambda doc: doc.count, reverse=True)
-    return render_template('stats.html', clicks_data=docs)
 
+    id_to_terms = {q['query_id']: q['terms'] for q in analytics_data.fact_queries}
+    
+    # 2. Map Document ID -> Set of unique queries
+    doc_terms_map = {}
+    for event in analytics_data.click_events:
+        d_id = event['doc_id']
+        q_id = event['query_id']
+        
+        # Retrieve the search terms using the query_id
+        term = id_to_terms.get(q_id)
+        
+        if term:
+            if d_id not in doc_terms_map:
+                doc_terms_map[d_id] = set() # Use a set to avoid duplicates automatically
+            doc_terms_map[d_id].add(term)
+            
+    # 3. Convert sets to sorted lists for the template
+    doc_queries_map = {k: sorted(list(v)) for k, v in doc_terms_map.items()}
+    
+    # Pass requests data
+    return render_template('stats.html', 
+                           clicks_data=docs, 
+                           requests_data=analytics_data.requests, 
+                           sessions_data=analytics_data.sessions, 
+                           queries_data=analytics_data.fact_queries,
+                           click_events_data=analytics_data.click_events,
+                           doc_queries_map=doc_queries_map)
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
@@ -182,6 +213,17 @@ def dashboard():
 def plot_number_of_views():
     return analytics_data.plot_number_of_views()
 
+@app.route('/plot_browsers', methods=['GET'])
+def plot_browsers():
+    return analytics_data.plot_browser_stats()
+
+@app.route('/plot_os', methods=['GET'])
+def plot_os():
+    return analytics_data.plot_os_stats()
+
+@app.route('/plot_time')
+def plot_time():
+    return analytics_data.plot_hourly_traffic()
 
 if __name__ == "__main__":
     app.run(port=8088, host="0.0.0.0", threaded=False, debug=os.getenv("DEBUG"))

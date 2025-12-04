@@ -2,14 +2,83 @@
 {% block page_title %}{{ page_title }}{% endblock %}
 {% block content %}
     <h2>Quick Stats</h2>
-    <h4>Clicked docs:</h4>
 
-    {% for doc in clicks_data %}
-        <div class="pb-3">
-            <div class="">
-                <span class="text-dark"> ({{ doc.count }} visits) </span> — id: {{ doc.pid }} — {{ doc.title }} - {{ doc.description }}
+    <div class="section user-data">
+        <h4>User data</h4>
+        <p>Total requests: {{ requests_data|length }}</p>
+        
+        <h5>Recent Requests:</h5>
+        {% for req in requests_data %}
+            <div class="pb-3 border-bottom" style="margin-top:0.5rem;">
+                <div><strong>IP:</strong> {{ req.ip }}</div>
+                <div><strong>Browser:</strong> {{ req.browser }} {{ req.browser_version }}</div>
+                <div><strong>OS:</strong> {{ req.os }} {{ req.os_version }}</div>
+                <div><strong>Platform:</strong> {{ req.platform }}</div>
+                <div><strong>Date:</strong> {{ req.date }}</div>
+                <div><strong>Time:</strong> {{ req.time }}</div>
             </div>
-        </div>
-        <hr>
-    {% endfor %}
+        {% endfor %}
+    </div>
+
+    <div class = "section clicked_docs">
+        <h4>Clicked docs:</h4>
+        {% for doc in clicks_data %}
+            <div class="pb-3">
+                <div class="">
+                    <span class="text-dark"> ({{ doc.count }} visits) </span> — id: {{ doc.pid }} — {{ doc.title }}
+                </div>
+                
+                {% set queries = doc_queries_map.get(doc.pid, []) %}
+                {% if queries %}
+                    <div style="margin-left: 20px; margin-top: 5px; font-size: 0.9em; color: #555;">
+                        <strong>Related queries:</strong> 
+                        {% for q in queries %}
+                            <span style="background: #eef; padding: 2px 6px; border-radius: 4px; margin-right: 5px; border: 1px solid #dde;">
+                                {{ q }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                </div>
+            
+            <hr>
+        {% endfor %}
+    </div>
+
+    <div class="section detailed-clicks">
+        <h4>Detailed Click History (Dwell Time):</h4>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Doc ID</th>
+                    <th>Query ID</th>
+                    <th>Dwell Time (seconds)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for event in click_events_data|reverse %}
+                <tr>
+                    <td>{{ event.timestamp.strftime('%H:%M:%S') }}</td>
+                    <td>{{ event.doc_id }}</td>
+                    <td>{{ event.query_id }}</td>
+                    <td>
+                        {% if event.dwell_time > 0 %}
+                            <span style="color: green; font-weight: bold;">{{ event.dwell_time }} s</span>
+                        {% else %}
+                            <span style="color: gray;">(active or missed)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+<style>
+.section{
+    margin:2rem 0rem;
+}
+
+</style>
 {% endblock %}

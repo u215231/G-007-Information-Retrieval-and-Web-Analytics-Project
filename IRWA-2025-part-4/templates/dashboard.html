@@ -22,10 +22,40 @@
 
     -->
 
-    <h3>Dashboard</h3>
-    <iframe src="/plot_number_of_views" width="600" height="400" style="border: none;"></iframe>
+    <h3>Analytics Dashboard</h3>
+    
+    <div class="dashboard-flex">
+        <div class = "dashboard-plot">
+            <iframe src="/plot_number_of_views" width="100%" height="400" style="border: none;"></iframe>
+        </div>
 
+        <div class = "dashboard-plot">
+            <iframe src="/plot_browsers" width="100%" height="400" style="border: none;"></iframe>
+        </div>
 
+        <div class = "dashboard-plot">
+            <iframe src="/plot_os" width="100%" height="400" style="border: none;"></iframe>
+        </div>
+        
+        <div class = "dashboard-plot">
+            <iframe src="/plot_time" width="100%" height="400" style="border: none;"></iframe>
+        </div>
+    </div>
+
+<style>
+    .dashboard-flex {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    .dashboard-plot {
+        flex: 1 1 calc(50% - 20px); /* two per row accounting for gap */
+        border: 1px solid #ddd;
+        border-radius: 2%;
+        padding: 10px;
+        box-sizing: border-box;
+    }
+</style>
 {% endblock %}
 
 

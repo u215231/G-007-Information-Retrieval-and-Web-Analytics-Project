@@ -13,8 +13,8 @@
     {% for item in results_list %}
         <div class="pb-3">
             <div class="doc-title">
-                <a href="{{ url_for('doc_details', pid=doc.pid, search_id=search_id) }}">
-                    {{ doc.title }}
+                <a href="{{ url_for('doc_details', pid=item.pid, search_id=search_id) }}">
+                    {{ item.title }}
                 </a>
             </div>
             <div class="doc-desc">
