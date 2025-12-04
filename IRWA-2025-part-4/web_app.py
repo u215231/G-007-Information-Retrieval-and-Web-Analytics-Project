@@ -1,6 +1,7 @@
 import os
 from json import JSONEncoder
 
+import pandas as pd
 import httpagentparser  # for getting the user agent as json
 from flask import Flask, render_template, session
 from flask import request
@@ -22,35 +23,29 @@ JSONEncoder.default = _default
 # end lines ***for using method to_json in objects ***
 
 
-# instantiate the Flask application
 app = Flask(__name__)
 
-# random 'secret_key' is used for persisting data in secure cookie
 app.secret_key = (
     os.getenv("SECRET_KEY") if os.getenv("SECRET_KEY") else "afgsreg86sr897b6st8b76va8er76fcs6g8d7"
 )
-
-# open browser dev tool to see the cookies
 app.session_cookie_name = (
     os.getenv("SESSION_COOKIE_NAME") if os.getenv("SESSION_COOKIE_NAME") else "IRWA_SEARCH_ENGINE"
 )
 
-# instantiate our search engine
 search_engine = SearchEngine()
-# instantiate our in memory persistence
 analytics_data = AnalyticsData()
-# instantiate RAG generator
 rag_generator = RAGGenerator()
 
-# load documents corpus into memory.
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
 file_path = path + "/" + (
     os.getenv("DATA_FILE_PATH") if os.getenv("DATA_FILE_PATH") else "data/fashion_products_dataset.json" 
 )
+file_csv_path = path + "/" + "data/fashion_products_dataset_processed_review.csv" 
 
+my_corpus = pd.read_csv(file_csv_path)
 corpus = load_corpus(file_path)
-# Log first element of corpus to verify it loaded correctly:
+print("\nMy Corpus is loaded... \n", my_corpus.head(3))
 print("\nCorpus is loaded... \n First element:\n", list(corpus.values())[0])
 
 
@@ -83,7 +78,7 @@ def search_form_post():
 
     search_id = analytics_data.save_query_terms(search_query)
 
-    results = search_engine.search(search_query, search_id, corpus)
+    results = search_engine.tfidf_search(search_query, search_id, my_corpus)
 
     # generate RAG response based on user query and retrieved results
     rag_response = rag_generator.generate_response(search_query, results)
@@ -94,7 +89,13 @@ def search_form_post():
 
     print(session)
 
-    return render_template('results.html', results_list=results, page_title="Results", found_counter=found_count, rag_response=rag_response)
+    return render_template(
+        'results.html', 
+        results_list=results, 
+        page_title="Results", 
+        found_counter=found_count, 
+        rag_response=rag_response
+    )
 
 
 @app.route('/doc_details', methods=['GET'])
@@ -122,7 +123,8 @@ def doc_details():
     else:
         analytics_data.fact_clicks[clicked_doc_id] = 1
 
-    print("fact_clicks count for id={} is {}".format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
+    print("fact_clicks count for id={} is {}"
+          .format(clicked_doc_id, analytics_data.fact_clicks[clicked_doc_id]))
     print(analytics_data.fact_clicks)
     return render_template('doc_details.html')
 
@@ -138,7 +140,13 @@ def stats():
     for doc_id in analytics_data.fact_clicks:
         row: Document = corpus[doc_id]
         count = analytics_data.fact_clicks[doc_id]
-        doc = StatsDocument(pid=row.pid, title=row.title, description=row.description, url=row.url, count=count)
+        doc = StatsDocument(
+            pid=row.pid, 
+            title=row.title, 
+            description=row.description, 
+            url=row.url, 
+            count=count
+        )
         docs.append(doc)
     
     # simulate sort by ranking

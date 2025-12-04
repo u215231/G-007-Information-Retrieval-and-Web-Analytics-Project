@@ -20,13 +20,13 @@
                 {{ item.doc_date }} — {{ item.description }}
             </div>
             <div class="doc-price">
-                ${{ item.selling_price }} - {{ item.discount }}% off
+                Selling Price: ${{ item.selling_price }} - {{ item.discount }}% discount off
             </div>
-            <div class="doc-rating">
-                {{ item.average_rating }}/5.0
-            </div>
-
-
+            {% if item.average_rating == item.average_rating %}
+                <div class="doc-rating">Rating: {{ item.average_rating }}/5.0</div>
+            {% else %}
+                <div class="doc-rating">Rating: —</div>
+            {% endif %}
         </div>
 
     {% endfor %}
