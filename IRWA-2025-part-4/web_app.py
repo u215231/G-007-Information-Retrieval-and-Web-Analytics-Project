@@ -5,7 +5,7 @@ from flask import jsonify
 
 import pandas as pd
 import httpagentparser  # for getting the user agent as json
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, redirect, url_for
 from flask import request
 
 from myapp.analytics.analytics_data import AnalyticsData, ClickedDoc
@@ -93,6 +93,35 @@ def index():
     return render_template('index.html', page_title="Welcome")
 
 
+# @app.route('/search', methods=['POST'])
+# def search_form_post():
+    
+#     search_query = request.form['search-query']
+
+#     session['last_search_query'] = search_query
+
+#     search_id = analytics_data.save_query_terms(search_query)
+
+#     results = search_engine.tfidf_search(search_query, search_id, my_corpus)
+
+#     # generate RAG response based on user query and retrieved results
+#     rag_response = rag_generator.generate_response(search_query, results)
+#     print("RAG response:", rag_response)
+
+#     found_count = len(results)
+#     session['last_found_count'] = found_count
+
+#     print(session)
+
+#     return render_template(
+#         'results.html', 
+#         results_list=results, 
+#         page_title="Results", 
+#         found_counter=found_count, 
+#         rag_response=rag_response
+#     )
+
+
 @app.route('/search', methods=['POST'])
 def search_form_post():
     
@@ -102,22 +131,29 @@ def search_form_post():
 
     search_id = analytics_data.save_query_terms(search_query)
 
+    # Guarda l'search_id a la sessió
+    session['current_search_id'] = search_id
+
+    return redirect(url_for('search_results'))
+
+@app.route('/results', methods=['GET'])
+def search_results():
+
+    search_query = session.get('last_search_query')
+    search_id = session.get('current_search_id')
+
     results = search_engine.tfidf_search(search_query, search_id, my_corpus)
 
-    # generate RAG response based on user query and retrieved results
     rag_response = rag_generator.generate_response(search_query, results)
-    print("RAG response:", rag_response)
 
     found_count = len(results)
     session['last_found_count'] = found_count
 
-    print(session)
-
     return render_template(
-        'results.html', 
-        results_list=results, 
-        page_title="Results", 
-        found_counter=found_count, 
+        'results.html',
+        results_list=results,
+        page_title="Results",
+        found_counter=found_count,
         rag_response=rag_response
     )
 
@@ -135,9 +171,11 @@ def doc_details():
     if not document:
         return "Document not found", 404
 
-    return render_template('doc_details.html', 
-                           doc=document, 
-                           event_id=event_id)
+    return render_template(
+        'doc_details.html', 
+        doc=document, 
+        event_id=event_id
+    )
 
 @app.route('/log_dwell_time', methods=['POST'])
 def log_dwell_time():
