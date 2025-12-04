@@ -75,7 +75,16 @@ class Document(BaseModel):
                     merged.update(item)
             return merged
         return v
-
+    
+    @property
+    def image(self):
+        """
+        Helper to return the first image URL if available.
+        """
+        if self.images and len(self.images) > 0:
+            return self.images[0]
+        return None
+    
     def __str__(self) -> str:
         return self.model_dump_json(indent=2)
 

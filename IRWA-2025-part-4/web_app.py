@@ -123,16 +123,20 @@ def search_form_post():
 
 @app.route('/doc_details', methods=['GET'])
 def doc_details():
-    # ... (keep existing session logic) ...
-
     clicked_doc_id = request.args["pid"]
     search_id = request.args.get("search_id", type=int)
 
-    # UPDATED: Register click and capture the event_id
     event_id = analytics_data.register_click(search_id, clicked_doc_id)
 
-    # UPDATED: Pass event_id to the template
-    return render_template('doc_details.html', doc_id=clicked_doc_id, event_id=event_id)
+    document = corpus.get(clicked_doc_id)
+    doc = corpus.get(clicked_doc_id)
+    print(doc.image)
+    if not document:
+        return "Document not found", 404
+
+    return render_template('doc_details.html', 
+                           doc=document, 
+                           event_id=event_id)
 
 @app.route('/log_dwell_time', methods=['POST'])
 def log_dwell_time():
