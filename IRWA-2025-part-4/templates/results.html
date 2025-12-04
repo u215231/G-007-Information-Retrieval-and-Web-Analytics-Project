@@ -31,7 +31,14 @@
             {% if item.discount != None %}
                 <div class="element-div doc-price">
                     <span class="font-weight-bold">${{ item.selling_price }}</span> 
-                    <span class="text-muted fs-6" style="text-decoration: line-through; text-decoration-color:red; text-decoration-thickness:1.5px; font-size: small;">${{ item.actual_price }}</span> 
+                    <span class="text-muted fs-6" 
+                        style=
+                            "text-decoration: line-through; 
+                            text-decoration-color:red; 
+                            text-decoration-thickness:1.5px; 
+                            font-size: small;"
+                            >${{ item.actual_price }}
+                    </span> 
                     <span class="badge text-danger text-white">{{ item.discount }}% off</span>
                 </div>
             {% else %}
