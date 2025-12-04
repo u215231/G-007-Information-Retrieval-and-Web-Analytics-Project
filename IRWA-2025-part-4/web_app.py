@@ -86,33 +86,6 @@ def index():
     return render_template('index.html', page_title="Welcome")
 
 
-# @app.route('/search', methods=['POST'])
-# def search_form_post():
-    
-#     search_query = request.form['search-query']
-
-#     session['last_search_query'] = search_query
-
-#     search_id = analytics_data.save_query_terms(search_query)
-
-#     results = search_engine.tfidf_search(search_query, search_id, my_corpus)
-
-#     # generate RAG response based on user query and retrieved results
-#     rag_response = rag_generator.generate_response(search_query, results)
-#     print("RAG response:", rag_response)
-
-#     found_count = len(results)
-#     session['last_found_count'] = found_count
-
-#     print(session)
-
-#     return render_template(
-#         'results.html', 
-#         results_list=results, 
-#         page_title="Results", 
-#         found_counter=found_count, 
-#         rag_response=rag_response
-#     )
 
 
 @app.route('/search', methods=['POST'])
@@ -250,7 +223,6 @@ def dashboard():
                            visited_docs=visited_docs, 
                            query_stats=query_stats)
 
-
 # New route added for generating an examples of basic Altair plot (used for dashboard)
 @app.route('/plot_number_of_views', methods=['GET'])
 def plot_number_of_views():
@@ -270,3 +242,25 @@ def plot_time():
 
 if __name__ == "__main__":
     app.run(port=8088, host="0.0.0.0", threaded=False, debug=os.getenv("DEBUG"))
+
+"""Deprecated"""
+if False:
+    @app.route('/search', methods=['POST'])
+    def search_form_post():
+        search_query = request.form['search-query']
+        session['last_search_query'] = search_query
+        search_id = analytics_data.save_query_terms(search_query)
+        results = search_engine.tfidf_search(search_query, search_id, my_corpus)
+        # generate RAG response based on user query and retrieved results
+        rag_response = rag_generator.generate_response(search_query, results)
+        print("RAG response:", rag_response)
+        found_count = len(results)
+        session['last_found_count'] = found_count
+        print(session)
+        return render_template(
+            'results.html', 
+            results_list=results, 
+            page_title="Results", 
+            found_counter=found_count, 
+            rag_response=rag_response
+        )
