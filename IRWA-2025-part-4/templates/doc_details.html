@@ -26,7 +26,7 @@
             </div>
 
             <div>
-                {% if doc.discount > 0 %}
+                {% if doc.discount and doc.discount > 0 %}
                     <h3 class="text-danger mb-0">
                         ${{ doc.selling_price }} 
                         <small class="text-muted text-decoration-line-through fs-6">${{ doc.actual_price }}</small>

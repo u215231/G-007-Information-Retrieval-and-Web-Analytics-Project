@@ -37,12 +37,17 @@ full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
 file_path = path + "/" + os.getenv("DATA_FILE_PATH")
 file_csv_path = path + "/" + os.getenv("DATA_CSV_FILE_PATH") 
+max_documents_displayed = int(os.getenv("MAX_DOCUMENTS_DISPLAYED"))
 
 my_corpus = pd.read_csv(file_csv_path)
 corpus = load_corpus(file_path)
-print("\nMy Corpus is loaded... \n", my_corpus.head(3))
-print("\nCorpus is loaded... \n First element:\n", list(corpus.values())[0])
 
+print("\nCorpus is loaded...")
+#print("First element:", list(corpus.values())[0])
+
+print("\nMy Corpus is loaded...")
+print(my_corpus.head(3))
+print()
 
 # Home URL "/"
 @app.route('/')
@@ -51,7 +56,6 @@ def index():
 
     if "session_id" not in session:
         session["session_id"] = str(uuid.uuid4())
-        # Register new session in analytics
         analytics_data.register_session(session["session_id"])
         print("New session registered:", session["session_id"])
     else:
@@ -67,7 +71,6 @@ def index():
     user_ip = request.remote_addr
     agent = httpagentparser.detect(user_agent)
     
-    # Pass the parsed agent to register_request
     analytics_data.register_request(
         path=request.path,
         user_ip=user_ip,
@@ -75,7 +78,6 @@ def index():
         agent_parsed=agent
     )
 
-    # debug prints as before
     print("Raw user browser:", user_agent)
     print("Remote IP:", user_ip)
     print("JSON browser:", httpagentparser.detect(user_agent))
@@ -86,18 +88,13 @@ def index():
     return render_template('index.html', page_title="Welcome")
 
 
-
-
 @app.route('/search', methods=['POST'])
 def search_form_post():
     
     search_query = request.form['search-query']
-
     session['last_search_query'] = search_query
 
     search_id = analytics_data.save_query_terms(search_query)
-
-    # Guarda l'search_id a la sessió
     session['current_search_id'] = search_id
 
     return redirect(url_for('search_results'))
@@ -108,8 +105,12 @@ def search_results():
     search_query = session.get('last_search_query')
     search_id = session.get('current_search_id')
 
-    results = search_engine.tfidf_search(search_query, search_id, my_corpus)
-
+    results = search_engine.tfidf_search(
+        search_query=search_query, 
+        search_id=search_id, 
+        corpus=my_corpus,
+        topK=max_documents_displayed
+    )
     rag_response = rag_generator.generate_response(search_query, results)
 
     found_count = len(results)
@@ -197,14 +198,16 @@ def stats():
     doc_queries_map = {k: sorted(list(v)) for k, v in doc_terms_map.items()}
     query_id_to_term = {q['query_id']: q['terms'] for q in analytics_data.fact_queries}
 
-    return render_template('stats.html', 
-                           clicks_data=docs, 
-                           requests_data=analytics_data.requests, 
-                           sessions_data=analytics_data.sessions, 
-                           queries_data=analytics_data.fact_queries,
-                           click_events_data=analytics_data.click_events,
-                           doc_queries_map=doc_queries_map,
-                           query_id_to_term=query_id_to_term)
+    return render_template(
+        'stats.html', 
+        clicks_data=docs, 
+        requests_data=analytics_data.requests, 
+        sessions_data=analytics_data.sessions, 
+        queries_data=analytics_data.fact_queries,
+        click_events_data=analytics_data.click_events,
+        doc_queries_map=doc_queries_map,
+        query_id_to_term=query_id_to_term
+    )
 
 @app.route('/dashboard', methods=['GET'])
 def dashboard():
@@ -219,9 +222,11 @@ def dashboard():
 
     query_stats = analytics_data.get_query_stats()
 
-    return render_template('dashboard.html', 
-                           visited_docs=visited_docs, 
-                           query_stats=query_stats)
+    return render_template(
+        'dashboard.html', 
+        visited_docs=visited_docs, 
+        query_stats=query_stats
+    )
 
 # New route added for generating an examples of basic Altair plot (used for dashboard)
 @app.route('/plot_number_of_views', methods=['GET'])

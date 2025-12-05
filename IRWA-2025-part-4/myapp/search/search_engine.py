@@ -9,24 +9,23 @@ from myapp.search.solution.processing import build_terms_str
 class SearchEngine:
     """Class that implements the search engine logic"""
 
-    def search(self, search_query, search_id, corpus: dict) -> list:
-        print("Search query:", search_query)
-
-        results = self.dummy_search(corpus, search_id) 
-        return results
-    
     @staticmethod
-    def tfidf_search(search_query: str, search_id: int, corpus: pd.DataFrame, topK: int = 100):
-
+    def tfidf_search(
+        search_query: str, 
+        search_id: int, 
+        corpus: pd.DataFrame, 
+        topK: int = 50
+    ) -> list[Document]:
+        print("Search query:", search_query)
+        
         documents = corpus.set_index("pid")["document"]
         query = pd.Series([build_terms_str(search_query)], [search_id])
+
         ranker = TFIDF(documents, query)
-
         scores_df = ranker.get_scores_df(topK)
-
         ranked_corpus = corpus.set_index("pid").loc[scores_df["document_id"]]
+
         results = []
-        print(corpus["description"].nunique(), len(corpus))
         for doc_id, doc in ranked_corpus.iterrows():
             results.append(Document(
                 pid=str(doc_id), 
@@ -41,7 +40,12 @@ class SearchEngine:
         return results
 
     @staticmethod
-    def dummy_search(corpus: dict[str, Document], search_id, num_results=20) -> list[Document]:
+    def dummy_search(
+        search_query: str, 
+        search_id: int, 
+        corpus: dict, 
+        num_results: int = 50
+    ) -> list[Document]:
         """
         Just a demo method, that returns random <num_results> documents from the corpus
         
@@ -50,6 +54,8 @@ class SearchEngine:
         :param num_results: number of documents to return
         :return: a list of random documents from the corpus
         """
+        print("Search query:", search_query)
+
         results = []
         doc_ids = list(corpus.keys())
         docs_to_return = np.random.choice(doc_ids, size=num_results, replace=False)
